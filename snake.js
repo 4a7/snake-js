@@ -262,7 +262,13 @@ var bufferTeclado=[];
 var snakeSizeReferencia=15;
 var canvas = document.getElementById("myCanvas");
 var ctx = canvas.getContext("2d");
-var x = -1*snakeSizeReferencia;
+var wHeight=(window.screen.availHeight);
+var wWidth=(window.screen.availWidth);
+wWidth=(Math.floor((wWidth*3/4)/15)*15);
+wHeight=(Math.floor((wHeight*2/3)/15)*15);
+canvas.width=wWidth;
+canvas.height=wHeight;
+var x = 4*snakeSizeReferencia;
 var y = (4*snakeSizeReferencia);
 var xReferencia=x;
 var yReferencia=y;
@@ -294,8 +300,17 @@ var asteriscoPresente=false;
 var lastAsterisco=Math.floor(date.getTime()/1000);
 var xAsterisco=Math.floor(canvas.width/(snakeSize*2))*snakeSize;
 var yAsterisco=Math.floor(canvas.height/(snakeSize*2))*snakeSize;
+var indiceAgregacionComponentes=10;
 //control del juego
 var finalizar=false;
+var presencia=[];
+for(i=0;i<Math.floor(wWidth/15);i++){
+	var data=[];
+	for(j=0;j<Math.floor(wHeight/15);j++){
+		data.push(false);
+	}
+	presencia.push(data);
+}
 //funciones
 function setValores(){
 	speed=200;
@@ -306,6 +321,14 @@ function setValores(){
 	colorSnake=colors[getRandom(colors.length)];
 	colorScore=colors[getRandom(colors.length)];
 	score=0;
+	presencia=[];
+	for(i=0;i<Math.floor(wWidth/15);i++){
+		var data=[];
+		for(j=0;j<Math.floor(wHeight/15);j++){
+			data.push(false);
+		}
+		presencia.push(data);
+	}
 	
 }
 function keyDownHandler(e) {
@@ -337,10 +360,13 @@ function getRandom(max){
 function drawResult(mensaje){
 	ctx.font = "50px Arial";
 	ctx.fillStyle = "black";
-	ctx.fillText(mensaje, canvas.width/3.5, canvas.height/2);
+	ctx.fillText(mensaje, canvas.width/2.5, canvas.height/2);
 }
 function agregarComponentes(){
 	var ultimoCom=snake[snake.length-1];
+	var cx=ultimoCom[ix];
+	var cy=ultimoCom[iy];
+	presencia[Math.floor(cx/snakeSize)][Math.floor(cy/snakeSize)]=true;
 	snakeComps++;
 	snake.push(ultimoCom);
 }
@@ -372,6 +398,7 @@ function checkAsterisco(xcheck,ycheck){
 	if(xAsterisco==xcheck && yAsterisco==ycheck){
 		asteriscoPresente=false;
 		score++;
+		agregarComponentes();
 	}
 }
 //se encarga de dibujar la serpiente
@@ -380,14 +407,28 @@ function drawSnake(){
 	for(i=snake.length-1;i>=0;i--){
 		ctx.rect(snake[i][ix],snake[i][iy],snakeSize,snakeSize);
 		if(i!=0){
-			snake[i]=[snake[i-1][ix],snake[i-1][iy],snake[i-1][idx],snake[i-1][idy]];//snake[i]=[snake[i][ix]+(snake[i][idx]*snakeSize),snake[i][iy]+(snake[i][idy]*snakeSize),snake[i-1][idx],snake[i-1][idy]];//[snake[i][0]+(dx*snakeSize*speed),snake[i][1]+(dy*snakeSize*speed)]
+			if(i==snake.length-1){
+				var cx=Math.floor(snake[i][ix]/snakeSize);
+				var cy=Math.floor(snake[i][iy]/snakeSize);
+				presencia[cx][cy]=false;
+			}
+			snake[i]=[snake[i-1][ix],snake[i-1][iy],snake[i-1][idx],snake[i-1][idy]];
 		}
 		else{
 			var newx=snake[i][ix]+(snake[i][idx]*snakeSize);
 			var newy=snake[i][iy]+(snake[i][idy]*snakeSize);
+			var cx=Math.floor(newx/snakeSize);
+			var cy=Math.floor(newy/snakeSize);
+			if(presencia[cx][cy]==true){
+				finalizar=true;
+				clearInterval(intervalid);
+				drawResult(perdida_mensaje);
+			}
 			checkAsterisco(newx,newy);
 			snake[i]=[newx,newy,snake[i][idx],snake[i][idy]];//[snake[i][0]+(dx*snakeSize*speed),snake[i][1]+(dy*snakeSize*speed)]
+			presencia[cx][cy]=true;
 		}
+		
 		
 	}
 	ctx.fillStyle = colorSnake;
@@ -407,6 +448,8 @@ function drawAsterisco(){
 	if(Math.floor(date.getTime()/1000)-lastAsterisco>25 || !asteriscoPresente){
 		xAsterisco=getRandom(Math.floor(canvas.width/snakeSize)-1)*snakeSize;
 		yAsterisco=getRandom(Math.floor(canvas.height/snakeSize)-1)*snakeSize;
+		console.log(getRandom(Math.floor(canvas.width/snakeSize)-1)*snakeSize);
+		console.log(getRandom(Math.floor(canvas.height/snakeSize)-1)*snakeSize);
 		colorAsterisco = colors[getRandom(colors.length)];
 		ctx.fillStyle = colorAsterisco;
 		lastAsterisco=Math.floor(date.getTime()/1000);
@@ -444,6 +487,7 @@ function draw(){
 var intervalid=setInterval(draw, speed);
 function Reiniciar(){
 	return function(){
+		
 		finalizar=false;
 		setValores()
 	}
